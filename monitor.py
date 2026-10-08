@@ -2,8 +2,12 @@ import os
 import json
 import requests
 
+# Grab secrets and print a warning if they are empty
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+
+print("Token loaded:", "YES" if TELEGRAM_BOT_TOKEN else "NO (IT IS EMPTY)")
+print("Chat ID loaded:", "YES" if TELEGRAM_CHAT_ID else "NO (IT IS EMPTY)")
 
 APIS = {
     "Subnets": "https://ic-api.internetcomputer.org/api/v3/subnets",
@@ -51,18 +55,21 @@ def main():
     with open(STATE_FILE, "w") as f:
         json.dump(new_state, f)
 
-    if changes and TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-        message = "🚨 *ICP Dashboard Update*\n\n" + "\n\n".join(changes)
-        telegram_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        res = requests.post(telegram_url, json={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
-            "parse_mode": "Markdown"
-        })
-        # This new line will print Telegram's error message
-        print("Telegram Response:", res.text)
+    if changes:
+        if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
+            message = "🚨 *ICP Dashboard Update*\n\n" + "\n\n".join(changes)
+            telegram_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            res = requests.post(telegram_url, json={
+                "chat_id": TELEGRAM_CHAT_ID,
+                "text": message,
+                "parse_mode": "Markdown"
+            })
+            print("Telegram Response Status:", res.status_code)
+            print("Telegram Response Body:", res.text)
+        else:
+            print("ERROR: Secrets are missing or empty in GitHub!")
     else:
-        print("Missing Telegram Tokens or no changes to report.")
+        print("No changes to report, but script executed successfully.")
 
 if __name__ == "__main__":
     main()
